@@ -1,162 +1,158 @@
 #include <stdio.h>
-#include <string.h>
+#include<string.h>
 #include <ctype.h>
 
 #define MAX 100
 #define SUBJECTS 5
 
-struct Student {
-    char id[20];
-    char name[30];
-    int minor[SUBJECTS];
-    int major[SUBJECTS];
-    int totalSub[SUBJECTS];   // minor + major
-    int totalMarks;
-    float percentage;
-    char grade[3];
-    float cgpa;
+struct Student
+{
+ char id[20];
+ char name[30];
+ int minor[SUBJECTS], major[SUBJECTS];
+ int totSub[SUBJECTS];
+ int tot;
+ float pct;
+ char grd[3];
+ float cg;
 };
 
-int isValidID(char id[]) {
-    for (int i = 0; id[i]; i++) {
-        if (!isalnum(id[i]))
-            return 0;
-    }
+int validID(char id[]){
+int i;
+for(i=0;id[i];i++)
+ if(!isalnum(id[i])) return 0;
+return 1;
+}
+
+int dupID(struct Student st[],int c,char id[])
+{
+ int i;
+ for(i=0;i<c;i++)
+  if(strcmp(st[i].id,id)==0) return 1;
+ return 0;
+}
+
+int validNm(char nm[]){
+ int i;
+ for(i=0;nm[i];i++)
+  if(!isalpha(nm[i])) return 0;
+ return 1;
+}
+
+int vMin(int m){ if(m>=0 && m<=40) return 1; else return 0; }
+int vMaj(int m)
+{
+ if(m>=0 && m<=60) return 1;
+ return 0;
+}
+
+void calcRes(struct Student *s)
+{
+ int i,flg=1;
+ s->tot=0;
+
+ for(i=0;i<SUBJECTS;i++){
+  s->totSub[i]=s->minor[i]+s->major[i];
+  s->tot+=s->totSub[i];
+  if(s->totSub[i]<50) flg=0;
+ }
+
+ s->pct = s->tot/(float)SUBJECTS;
+
+ if(!flg) strcpy(s->grd,"F");
+ else if(s->pct>=90) strcpy(s->grd,"O");
+ else if(s->pct>=85) strcpy(s->grd,"A+");
+ else if(s->pct>=75) strcpy(s->grd,"A");
+ else if(s->pct>=65) strcpy(s->grd,"B+");
+ else if(s->pct>=60) strcpy(s->grd,"B");
+ else if(s->pct>=55) strcpy(s->grd,"C");
+ else if(s->pct>=50) strcpy(s->grd,"D");
+ else strcpy(s->grd,"F");
+
+ s->cg=s->pct/10;
+}
+
+void showRpt(struct Student s[],int n){
+ int i;
+ printf("\nID\tName\tTot\tPct\tGrd\tCG\n\n");
+ for(i=0;i<n;i++)
+ printf("%s\t%s\t%d\t%.2f\t%s\t%.2f\n",
+ s[i].id,s[i].name,s[i].tot,
+ s[i].pct,s[i].grd,s[i].cg);
+}
+
+void stats(struct Student s[],int n)
+{
+ int i;
+ float sm=0,mx=s[0].pct,mn=s[0].pct;
+ int gCnt[8]={0};
+
+ for(i=0;i<n;i++){
+  sm+=s[i].pct;
+  if(s[i].pct>mx) mx=s[i].pct;
+  if(s[i].pct<mn) mn=s[i].pct;
+
+  if(strcmp(s[i].grd,"O")==0) gCnt[0]++;
+  else if(strcmp(s[i].grd,"A+")==0) gCnt[1]++;
+  else if(strcmp(s[i].grd,"A")==0) gCnt[2]++;
+  else if(strcmp(s[i].grd,"B+")==0) gCnt[3]++;
+  else if(strcmp(s[i].grd,"B")==0) gCnt[4]++;
+  else if(strcmp(s[i].grd,"C")==0) gCnt[5]++;
+  else if(strcmp(s[i].grd,"D")==0) gCnt[6]++;
+  else gCnt[7]++;
+ }
+
+ printf("\nClass Avg %% : %.2f",sm/n);
+ printf("\nMax %% : %.2f",mx);
+ printf("\nMin %% : %.2f\n",mn);
+
+ printf("\nGrade Dist:\n");
+ printf("O:%d A+:%d A:%d B+:%d B:%d C:%d D:%d F:%d\n",
+ gCnt[0],gCnt[1],gCnt[2],gCnt[3],
+ gCnt[4],gCnt[5],gCnt[6],gCnt[7]);
+}
+
+int main()
+{
+ struct Student st[MAX];
+ int n,i,j;
+ FILE *fp=fopen("student.txt","r");
+
+ if(fp==NULL){
+  printf("File err\n");
+  return 1;
+ }
+
+ fscanf(fp,"%d",&n);
+
+ for(i=0;i<n;i++)
+ {
+  fscanf(fp,"%s %s",st[i].id,st[i].name);
+
+  if(!validID(st[i].id)||dupID(st,i,st[i].id)){
+   printf("Bad ID\n");
+   return 1;
+  }
+
+  if(!validNm(st[i].name)){
+   printf("Bad Name\n");
+   return 1;
+  }
+
+  for(j=0;j<SUBJECTS;j++){
+   fscanf(fp,"%d %d",&st[i].minor[j],&st[i].major[j]);
+   if(!vMin(st[i].minor[j])||!vMaj(st[i].major[j])){
+    printf("Marks err\n");
     return 1;
+   }
+  }
+  calcRes(&st[i]);
+ }
+
+ fclose(fp);
+
+ showRpt(st,n);
+ stats(st,n);
+
+ return 0;
 }
-
-int isDuplicateID(struct Student s[], int count, char id[]) {
-    for (int i = 0; i < count; i++) {
-        if (strcmp(s[i].id, id) == 0)
-            return 1;
-    }
-    return 0;
-}
-
-int isValidName(char name[]) {
-    for (int i = 0; name[i]; i++) {
-        if (!isalpha(name[i]))
-            return 0;
-    }
-    return 1;
-}
-
-int isValidMinor(int m) {
-    return (m >= 0 && m <= 40);
-}
-
-int isValidMajor(int m) {
-    return (m >= 0 && m <= 60);
-}
-
-void calculateResult(struct Student *s) {
-    s->totalMarks = 0;
-    int passAll = 1;
-
-    for (int i = 0; i < SUBJECTS; i++) {
-        s->totalSub[i] = s->minor[i] + s->major[i];
-        s->totalMarks += s->totalSub[i];
-
-        if (s->totalSub[i] < 50)
-            passAll = 0;
-    }
-
-    s->percentage = s->totalMarks / (float)SUBJECTS;
-
-    if (!passAll)
-        strcpy(s->grade, "F");
-    else if (s->percentage >= 90) strcpy(s->grade, "O");
-    else if (s->percentage >= 85) strcpy(s->grade, "A+");
-    else if (s->percentage >= 75) strcpy(s->grade, "A");
-    else if (s->percentage >= 65) strcpy(s->grade, "B+");
-    else if (s->percentage >= 60) strcpy(s->grade, "B");
-    else if (s->percentage >= 55) strcpy(s->grade, "C");
-    else if (s->percentage >= 50) strcpy(s->grade, "D");
-    else strcpy(s->grade, "F");
-
-    s->cgpa = s->percentage / 10;
-}
-
-void displayReport(struct Student s[], int n) {
-    printf("\nID\tName\tTotal\tPercent\tGrade\tCGPA\n");
-    printf("\n");
-
-    for (int i = 0; i < n; i++) {
-        printf("%s\t%s\t%d\t%.2f\t%s\t%.2f\n",
-               s[i].id, s[i].name, s[i].totalMarks,
-               s[i].percentage, s[i].grade, s[i].cgpa);
-    }
-}
-
-void statistics(struct Student s[], int n) {
-    float sum = 0, max = s[0].percentage, min = s[0].percentage;
-    int gradeCount[8] = {0}; // O, A+, A, B+, B, C, D, F
-
-    for (int i = 0; i < n; i++) {
-        sum += s[i].percentage;
-        if (s[i].percentage > max) max = s[i].percentage;
-        if (s[i].percentage < min) min = s[i].percentage;
-
-        if (strcmp(s[i].grade, "O") == 0) gradeCount[0]++;
-        else if (strcmp(s[i].grade, "A+") == 0) gradeCount[1]++;
-        else if (strcmp(s[i].grade, "A") == 0) gradeCount[2]++;
-        else if (strcmp(s[i].grade, "B+") == 0) gradeCount[3]++;
-        else if (strcmp(s[i].grade, "B") == 0) gradeCount[4]++;
-        else if (strcmp(s[i].grade, "C") == 0) gradeCount[5]++;
-        else if (strcmp(s[i].grade, "D") == 0) gradeCount[6]++;
-        else gradeCount[7]++;
-    }
-
-    printf("\nClass Average Percentage: %.2f", sum / n);
-    printf("\nHighest Percentage: %.2f", max);
-    printf("\nLowest Percentage: %.2f\n", min);
-
-    printf("\nGrade Distribution:\n");
-    printf("O : %d\nA+: %d\nA : %d\nB+: %d\nB : %d\nC : %d\nD : %d\nF : %d\n",
-           gradeCount[0], gradeCount[1], gradeCount[2], gradeCount[3],
-           gradeCount[4], gradeCount[5], gradeCount[6], gradeCount[7]);
-}
-int main() {
-    struct Student s[MAX];
-    int n;
-
-    FILE *fp = fopen("student.txt", "r");
-    if (fp == NULL) {
-        perror("File opening failed");
-        return 1;
-    }
-
-    fscanf(fp, "%d", &n);
-
-    for (int i = 0; i < n; i++) {
-        fscanf(fp, "%s %s", s[i].id, s[i].name);
-
-        if (!isValidID(s[i].id) || isDuplicateID(s, i, s[i].id)) {
-            printf("Invalid or duplicate Student ID\n");
-            return 1;
-        }
-
-        if (!isValidName(s[i].name)) {
-            printf("Invalid Name\n");
-            return 1;
-        }
-
-        for (int j = 0; j < SUBJECTS; j++) {
-            fscanf(fp, "%d %d", &s[i].minor[j], &s[i].major[j]);
-
-            if (!isValidMinor(s[i].minor[j]) || !isValidMajor(s[i].major[j])) {
-                printf("Invalid Minor/Major marks\n");
-                return 1;
-            }
-        }
-        calculateResult(&s[i]);
-    }
-
-    fclose(fp);
-
-    displayReport(s, n);
-    statistics(s, n);
-
-    return 0;
-}
-
